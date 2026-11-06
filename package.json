@@ -1,0 +1,1 @@
+{"dependencies":{"express":"^4.22.3"},"description":"校园课程评价与学习资料平台 + 学习助手 Agent（意图识别、证据检索、复习计划）","main":"server/index.js","name":"course-hub","scripts":{"start":"node server/index.js"},"version":"1.1.0"}

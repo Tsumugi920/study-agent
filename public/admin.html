@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Course Hub 管理后台</title>
+<style>
+body{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;max-width:900px;margin:0 auto;padding:20px;background:#f6f7fb;color:#222}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:8px 0}
+button{padding:6px 10px;margin:2px;border:1px solid #2563eb;background:#2563eb;color:#fff;border-radius:6px;cursor:pointer}
+button.danger{border-color:#dc2626;background:#dc2626}
+button.ghost{background:#fff;color:#2563eb}
+.muted{color:#666;font-size:13px}
+</style>
+</head>
+<body>
+<h1>🛠 Course Hub 管理后台</h1>
+<p><a href="/">← 回首页</a></p>
+<div id="stats" class="card">加载中…</div>
+<h2>待审核评价</h2>
+<div id="pending"></div>
+<h2>全部评价（可删除）</h2>
+<div id="allReviews"></div>
+<h2>全部课程（可删除）</h2>
+<div id="allCourses"></div>
+<script>
+const api = p => fetch(p).then(r => r.json());
+async function load() {
+  const [h, c, r, m, q, g, t] = await Promise.all([
+    api('/api/health'), api('/api/courses?size=1'), api('/api/reviews?size=1'),
+    api('/api/materials?size=1'), api('/api/questions?size=1'), api('/api/study-groups?size=1'), api('/api/teachers?size=1')]);
+  document.getElementById('stats').innerHTML =
+    `<b>服务状态：</b>${h.ok ? '正常' : '异常'}（端口 ${h.port}）<br>` +
+    `课程 ${c.total} · 评价 ${r.total} · 资料 ${m.total} · 问题 ${q.total} · 学习小组 ${g.total} · 教师 ${t.total}`;
+  const rev = await api('/api/reviews?size=50');
+  document.getElementById('pending').innerHTML = rev.items.filter(x => x.status === 'pending').map(x =>
+    `<div class="card">课程#${x.courseId} · ${x.author} · ${x.rating}/5 · ${x.comment}<br><button onclick="mod(${x.id},'approved')">通过</button><button class="danger" onclick="mod(${x.id},'rejected')">驳回</button></div>`).join('') || '<p class="muted">暂无待审核评价</p>';
+  document.getElementById('allReviews').innerHTML = rev.items.map(x =>
+    `<div class="card">#${x.id} 课程#${x.courseId} · ${x.author} · ${x.rating}/5 · ${x.status} <button class="danger" onclick="delReview(${x.id})">删除</button></div>`).join('');
+  const cs = await api('/api/courses?size=50');
+  document.getElementById('allCourses').innerHTML = cs.items.map(x =>
+    `<div class="card">#${x.id} ${x.code} ${x.name} · ${x.teacher} <button class="danger" onclick="delCourse(${x.id})">删除</button></div>`).join('');
+}
+async function mod(id, status) {
+  await fetch('/api/reviews/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+  load();
+}
+async function delReview(id) { if (!confirm('确定删除这条评价？')) return; await fetch('/api/reviews/' + id, { method: 'DELETE' }); load(); }
+async function delCourse(id) { if (!confirm('确定删除这门课程？')) return; await fetch('/api/courses/' + id, { method: 'DELETE' }); load(); }
+load();
+</script>
+</body>
+</html>

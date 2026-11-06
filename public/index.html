@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Course Hub — 校园课程评价与学习资料平台</title>
+<style>
+body{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;max-width:1000px;margin:0 auto;padding:20px;background:#f6f7fb;color:#222}
+h1{font-size:24px}h2{font-size:18px;margin-top:28px}
+nav button{margin:2px;padding:8px 12px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer}
+nav button.active{background:#2563eb;color:#fff;border-color:#2563eb}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:8px 0}
+input,select,textarea{padding:7px;margin:3px;border:1px solid #ccc;border-radius:6px}
+button{padding:7px 12px;border:1px solid #2563eb;background:#2563eb;color:#fff;border-radius:6px;cursor:pointer}
+button.ghost{background:#fff;color:#2563eb}
+.muted{color:#666;font-size:13px}
+.view{display:none}.view.active{display:block}
+</style>
+</head>
+<body>
+<h1>📚 Course Hub — 校园课程评价与学习资料平台</h1>
+<p class="muted">课程评价 · 学习资料 · 问答 · 学习小组 · 教师主页 · 我的收藏 &nbsp;|&nbsp; <a href="/admin.html">管理后台</a> &nbsp;|&nbsp; <a href="#" onclick="showAgent();return false;">🤖 学习助手</a></p>
+<nav id="tabs">
+<button data-v="courses" class="active">课程</button>
+<button data-v="reviews">评价</button>
+<button data-v="materials">资料</button>
+<button data-v="qa">问答</button>
+<button data-v="groups">学习小组</button>
+<button data-v="teachers">教师</button>
+<button data-v="collections">我的收藏</button>
+<button data-v="agent">🤖 学习助手</button>
+</nav>
+<div style="margin-top:12px"><input id="q" placeholder="搜索课程 / 资料 / 教师 / 问题…" style="width:60%"><button onclick="doSearch()">搜索</button><span id="searchOut" class="muted"></span></div>
+
+<section id="v-courses" class="view active"><h2>课程</h2>
+<div><select id="dept"><option value="">全部学院</option><option>计算机学院</option><option>数学学院</option><option>外国语学院</option><option>经济学院</option><option>物理学院</option><option>心理学院</option><option>马克思主义学院</option></select>
+<select id="sort"><option value="">默认排序</option><option value="rating_desc">评分最高</option><option value="credits_desc">学分最高</option></select>
+<button onclick="loadCourses()">筛选</button></div>
+<div id="courseList"></div>
+<h3>新增课程</h3>
+<input id="c-code" placeholder="课程代码 如 CS999"><input id="c-name" placeholder="课程名"><input id="c-teacher" placeholder="任课教师"><input id="c-dept" placeholder="学院"><input id="c-credits" type="number" placeholder="学分" style="width:70px">
+<button onclick="addCourse()">添加课程</button></section>
+
+<section id="v-reviews" class="view"><h2>课程评价</h2><div id="reviewList"></div>
+<h3>写评价</h3>
+<input id="r-course" type="number" placeholder="课程ID"><input id="r-author" placeholder="你的名字"><input id="r-rating" type="number" min="1" max="5" placeholder="评分 1-5" style="width:90px"><input id="r-comment" placeholder="评价内容" style="width:40%">
+<button onclick="addReview()">提交评价</button></section>
+
+<section id="v-materials" class="view"><h2>学习资料</h2><div id="materialList"></div>
+<h3>上传资料</h3>
+<input id="m-title" placeholder="资料标题"><input id="m-course" placeholder="所属课程"><select id="m-type"><option>课件</option><option>笔记</option><option>真题</option><option>习题</option><option>其他</option></select><input id="m-user" placeholder="上传者">
+<button onclick="addMaterial()">上传</button></section>
+
+<section id="v-qa" class="view"><h2>课程问答</h2><div id="qaList"></div>
+<h3>提问题</h3>
+<input id="q-title" placeholder="问题标题" style="width:40%"><input id="q-author" placeholder="你的名字"><input id="q-content" placeholder="问题描述" style="width:40%">
+<button onclick="addQuestion()">提问</button></section>
+
+<section id="v-groups" class="view"><h2>学习小组</h2><div id="groupList"></div>
+<h3>创建小组</h3>
+<input id="g-name" placeholder="小组名"><input id="g-course" placeholder="所属课程"><input id="g-time" placeholder="时间 如 每周三 19:00"><input id="g-place" placeholder="地点"><input id="g-cap" type="number" placeholder="人数上限" style="width:80px"><input id="g-creator" placeholder="创建人">
+<button onclick="addGroup()">创建小组</button></section>
+
+<section id="v-teachers" class="view"><h2>教师</h2><div id="teacherList"></div></section>
+
+<section id="v-collections" class="view"><h2>我的收藏</h2><div id="collList"></div>
+<h3>收藏课程 / 资料</h3>
+<input id="col-user" placeholder="你的名字"><select id="col-kind"><option value="course">课程</option><option value="material">资料</option></select><input id="col-target" type="number" placeholder="目标ID" style="width:80px">
+<button onclick="addCollection()">收藏</button></section>
+
+<section id="v-agent" class="view"><h2>🤖 学习助手 Agent</h2>
+<p class="muted">意图识别 → 实体抽取 → 证据检索 → 综合回答。回答只引用平台里的课程、资料、问答和评价，没有找到的内容会直接说不知道。支持追问（比如先问“数据结构难吗”，再问“那门课难吗”）。</p>
+<div id="agentMsgs" style="border:1px solid #e5e7eb;border-radius:8px;background:#fff;padding:12px;min-height:180px;max-height:380px;overflow-y:auto"></div>
+<div style="margin:8px 0">
+<button class="ghost" onclick="agentChip('数据结构难吗')">数据结构难吗</button>
+<button class="ghost" onclick="agentChip('推荐一门3学分的课')">推荐一门3学分的课</button>
+<button class="ghost" onclick="agentChip('数据结构期末会考红黑树吗')">数据结构期末会考红黑树吗</button>
+<button class="ghost" onclick="agentChip('李晓梅老师怎么样')">李晓梅老师怎么样</button>
+<button class="ghost" onclick="agentChip('帮我做一份7天复习计划')">帮我做一份7天复习计划</button>
+</div>
+<div><input id="agentInput" placeholder="问学习助手：选课 / 资料 / 考试 / 老师 / 复习计划…" style="width:65%"><button onclick="sendAgent()">发送</button></div>
+<h3>生成复习计划</h3>
+<div><select id="planCourse"></select><input id="planDays" type="number" min="1" max="30" value="7" style="width:70px" placeholder="天数"><button onclick="makePlan()">生成计划</button></div>
+<div id="planOut"></div>
+</section>
+
+<script>
+const api = p => fetch(p).then(r => r.json());
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('v-' + b.dataset.v).classList.add('active');
+  loadAll();
+});
+async function loadCourses() {
+  const dept = document.getElementById('dept').value, sort = document.getElementById('sort').value;
+  const d = await api('/api/courses?size=50' + (dept ? '&department=' + encodeURIComponent(dept) : '') + (sort ? '&sort=' + sort : ''));
+  document.getElementById('courseList').innerHTML = d.items.map(c =>
+    `<div class="card"><b>${esc(c.code)} ${esc(c.name)}</b> · ${esc(c.teacher)} · ${esc(c.department)} · ${c.credits}学分 · ${esc(c.semester)}<br><span class="muted">评分 ${c.rating}（${c.reviewCount}条评价）</span> <button class="ghost" onclick="collect(${c.id},'course')">收藏</button></div>`).join('');
+}
+async function loadReviews() {
+  const d = await api('/api/reviews?size=50&sort=likes_desc');
+  document.getElementById('reviewList').innerHTML = d.items.map(r =>
+    `<div class="card">课程#${r.courseId} · ${esc(r.author)} · 评分 ${r.rating}/5 · 难度 ${r.difficulty} · 负担 ${r.workload}<br>${esc(r.comment)}<br><span class="muted">👍 ${r.likes} · ${esc(r.status)}</span> <button class="ghost" onclick="likeReview(${r.id})">点赞</button></div>`).join('');
+}
+async function loadMaterials() {
+  const d = await api('/api/materials?size=50&sort=downloads_desc');
+  document.getElementById('materialList').innerHTML = d.items.map(m =>
+    `<div class="card"><b>${esc(m.title)}</b> · ${esc(m.course)} · ${esc(m.type)} · ${esc(m.uploader)} · ${esc(m.size)}<br><span class="muted">下载 ${m.downloads} 次</span> <button class="ghost" onclick="dl(${m.id})">下载 +1</button></div>`).join('');
+}
+async function loadQA() {
+  const d = await api('/api/questions?size=50');
+  document.getElementById('qaList').innerHTML = d.items.map(q =>
+    `<div class="card"><b>${esc(q.title)}</b> · ${esc(q.course)} · ${esc(q.author)} · ${esc(q.status)}<br><span class="muted">${esc(q.content)}</span></div>`).join('');
+}
+async function loadGroups() {
+  const d = await api('/api/study-groups?size=50');
+  document.getElementById('groupList').innerHTML = d.items.map(g =>
+    `<div class="card"><b>${esc(g.name)}</b> · ${esc(g.course)} · ${esc(g.time)} · ${esc(g.place)}<br><span class="muted">成员 ${g.members.length}/${g.capacity}：${esc(g.members.join('、'))}</span> <button class="ghost" onclick="joinGroup(${g.id})">加入</button></div>`).join('');
+}
+async function loadTeachers() {
+  const d = await api('/api/teachers?size=50&sort=rating_desc');
+  document.getElementById('teacherList').innerHTML = d.items.map(t =>
+    `<div class="card"><b>${esc(t.name)}</b> · ${esc(t.title)} · ${esc(t.department)} · 评分 ${t.rating}<br><span class="muted">${esc(t.courses.join('、'))} · ${esc(t.email)}</span></div>`).join('');
+}
+async function loadCollections() {
+  const d = await api('/api/collections?size=50');
+  document.getElementById('collList').innerHTML = d.items.map(c =>
+    `<div class="card">${esc(c.user)} 收藏了 ${c.kind === 'course' ? '课程' : '资料'} #${c.targetId} <span class="muted">${esc(c.note)}</span></div>`).join('');
+}
+function loadAll() { loadCourses(); loadReviews(); loadMaterials(); loadQA(); loadGroups(); loadTeachers(); loadCollections(); }
+async function doSearch() {
+  const q = document.getElementById('q').value;
+  const d = await api('/api/search?q=' + encodeURIComponent(q));
+  document.getElementById('searchOut').textContent = ` 找到课程 ${d.courses.length}、资料 ${d.materials.length}、教师 ${d.teachers.length}、问题 ${d.questions.length}`;
+}
+async function post(url, body) { const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json(); if (!r.ok) alert(j.error || '失败'); return { r, j }; }
+async function addCourse() { const { r } = await post('/api/courses', { code: document.getElementById('c-code').value, name: document.getElementById('c-name').value, teacher: document.getElementById('c-teacher').value, department: document.getElementById('c-dept').value, credits: Number(document.getElementById('c-credits').value) || 2 }); if (r.ok) loadCourses(); }
+async function addReview() { const { r } = await post('/api/reviews', { courseId: Number(document.getElementById('r-course').value), author: document.getElementById('r-author').value, rating: Number(document.getElementById('r-rating').value), comment: document.getElementById('r-comment').value }); if (r.ok) loadReviews(); }
+async function addMaterial() { const { r } = await post('/api/materials', { title: document.getElementById('m-title').value, course: document.getElementById('m-course').value, type: document.getElementById('m-type').value, uploader: document.getElementById('m-user').value }); if (r.ok) loadMaterials(); }
+async function addQuestion() { const { r } = await post('/api/questions', { title: document.getElementById('q-title').value, author: document.getElementById('q-author').value, content: document.getElementById('q-content').value }); if (r.ok) loadQA(); }
+async function addGroup() { const { r } = await post('/api/study-groups', { name: document.getElementById('g-name').value, course: document.getElementById('g-course').value, time: document.getElementById('g-time').value, place: document.getElementById('g-place').value, capacity: Number(document.getElementById('g-cap').value) || 10, creator: document.getElementById('g-creator').value }); if (r.ok) loadGroups(); }
+async function addCollection() { const { r } = await post('/api/collections', { user: document.getElementById('col-user').value, kind: document.getElementById('col-kind').value, targetId: Number(document.getElementById('col-target').value) }); if (r.ok) loadCollections(); }
+async function collect(id, kind) { const name = prompt('你的名字'); if (!name) return; const { r } = await post('/api/collections', { user: name, kind, targetId: id }); if (r.ok) loadCollections(); }
+async function likeReview(id) { await post('/api/reviews/' + id + '/like', {}); loadReviews(); }
+async function dl(id) { await post('/api/materials/' + id + '/download', {}); loadMaterials(); }
+async function joinGroup(id) { const name = prompt('你的名字'); if (!name) return; const { r } = await post('/api/study-groups/' + id + '/join', { name }); if (r.ok) loadGroups(); }
+  // ---- 学习助手 Agent ----
+const agentSession = 's-' + Math.random().toString(36).slice(2, 10);
+function showAgent() {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.remove('active'));
+  document.querySelector('[data-v="agent"]').classList.add('active');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('v-agent').classList.add('active');
+  loadPlanCourses();
+}
+function agentMsg(role, html) {
+  const box = document.getElementById('agentMsgs');
+  const div = document.createElement('div');
+  div.className = 'card';
+  div.innerHTML = '<b>' + (role === 'user' ? '你' : '🤖 学习助手') + '：</b><br>' + html;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+function renderAgentSources(sources) {
+  if (!sources || !sources.length) return '';
+  return '<div class="muted" style="margin-top:6px">📎 证据来源：</div>' + sources.map(s =>
+    `<div class="card" style="margin:4px 0;padding:8px"><b>${esc(s.title)}</b> <span class="muted">[${esc(s.type)}]</span><br><span class="muted">${esc(s.detail || '')}</span></div>`).join('');
+}
+async function sendAgent() {
+  const input = document.getElementById('agentInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  agentMsg('user', esc(msg));
+  const r = await fetch('/api/agent/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: agentSession, message: msg }) });
+  const j = await r.json();
+  agentMsg('assistant', esc(j.reply).replace(/\n/g, '<br>') + renderAgentSources(j.sources) + `<div class="muted" style="margin-top:4px">意图：${esc(j.intent || '')} · 步骤：${esc((j.steps || []).join(' → '))}</div>`);
+  if (j.plan) renderPlan(j.plan);
+}
+function agentChip(q) { document.getElementById('agentInput').value = q; sendAgent(); }
+document.getElementById('agentInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendAgent(); });
+async function loadPlanCourses() {
+  const sel = document.getElementById('planCourse');
+  if (sel.options.length) return;
+  const d = await api('/api/courses?size=50');
+  sel.innerHTML = d.items.map(c => `<option value="${c.id}">${esc(c.code)} ${esc(c.name)}</option>`).join('');
+}
+function renderPlan(plan) {
+  document.getElementById('planOut').innerHTML =
+    `<h3>${esc(plan.course.code)} ${esc(plan.course.name)} · ${plan.days} 天复习计划</h3>` +
+    plan.plan.map(d => `<div class="card"><b>第 ${d.day} 天 · ${esc(d.title)}</b><br>${d.tasks.map(esc).join('<br>')}</div>`).join('') +
+    (plan.groups.length ? `<p class="muted">可加入小组：${plan.groups.map(g => esc(g.name) + '（' + esc(g.time) + '，' + esc(g.place) + '）').join('；')}</p>` : '');
+}
+async function makePlan() {
+  const courseId = Number(document.getElementById('planCourse').value);
+  const days = Number(document.getElementById('planDays').value) || 7;
+  const r = await fetch('/api/agent/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ courseId, days }) });
+  const j = await r.json();
+  if (!r.ok) { alert(j.error || '失败'); return; }
+  renderPlan(j);
+}
+loadAll();
+</script>
+</body>
+</html>
