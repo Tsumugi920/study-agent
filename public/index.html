@@ -78,7 +78,7 @@ button.ghost{background:#fff;color:#2563eb}
 <button class="ghost" onclick="agentChip('李晓梅老师怎么样')">李晓梅老师怎么样</button>
 <button class="ghost" onclick="agentChip('帮我做一份7天复习计划')">帮我做一份7天复习计划</button>
 </div>
-<div><input id="agentInput" placeholder="问学习助手：选课 / 资料 / 考试 / 老师 / 复习计划…" style="width:65%"><button onclick="sendAgent()">发送</button></div>
+<div><input id="agentInput" placeholder="问学习助手：选课 / 资料 / 考试 / 老师 / 复习计划…" style="width:65%"><button onclick="sendAgent()">发送</button><button id="agentClear" type="button" onclick="clearAgent()">清空对话</button></div>
 <h3>生成复习计划</h3>
 <div><select id="planCourse"></select><input id="planDays" type="number" min="1" max="30" value="7" style="width:70px" placeholder="天数"><button onclick="makePlan()">生成计划</button></div>
 <div id="planOut"></div>
@@ -179,6 +179,22 @@ async function sendAgent() {
   const j = await r.json();
   agentMsg('assistant', esc(j.reply).replace(/\n/g, '<br>') + renderAgentSources(j.sources) + `<div class="muted" style="margin-top:4px">意图：${esc(j.intent || '')} · 步骤：${esc((j.steps || []).join(' → '))}</div>`);
   if (j.plan) renderPlan(j.plan);
+}
+async function clearAgent() {
+  const msgs = document.querySelector('#agentMsgs');
+  try {
+    const u = '/api/agent/sessions/' + agentSession;
+    const res = await fetch(u, { method: 'DELETE' });
+    if (res.ok === false) throw new Error('HTTP ' + res.status);
+    msgs.innerHTML = '';
+    const tip = document.createElement('div');
+    tip.className = 'agent-tip';
+    tip.textContent = '对话已清空';
+    msgs.appendChild(tip);
+  } catch (err) {
+    msgs.innerHTML = '';
+    console.error('清空对话失败:', err);
+  }
 }
 function agentChip(q) { document.getElementById('agentInput').value = q; sendAgent(); }
 document.getElementById('agentInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendAgent(); });

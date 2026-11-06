@@ -540,4 +540,11 @@ function capabilities() {
   };
 }
 
-module.exports = { chat, getSession, buildPlan, capabilities, loadData };
+function clearSession(id) {
+  if (!id || !Object.prototype.hasOwnProperty.call(sessions, id)) return false;
+  delete sessions[id];
+  persistSessions();
+  return true;
+}
+
+module.exports = { chat, getSession, clearSession, buildPlan, capabilities, loadData };

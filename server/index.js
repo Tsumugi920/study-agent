@@ -331,6 +331,10 @@ app.post('/api/agent/chat', async (req, res) => {
 app.get('/api/agent/sessions/:id', (req, res) => {
   res.json(agent.getSession(req.params.id));
 });
+app.delete('/api/agent/sessions/:id', (req, res) => {
+  const cleared = agent.clearSession(req.params.id);
+  res.json({ ok: true, cleared: !!cleared, sessionId: req.params.id });
+});
 app.post('/api/agent/plan', (req, res) => {
   const d = agent.loadData();
   const { courseId, days } = req.body || {};
